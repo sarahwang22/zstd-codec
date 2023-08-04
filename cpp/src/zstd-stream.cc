@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <emscripten.h>
+
 #include "zstd-dict.h"
 #include "zstd-stream.h"
 
@@ -179,6 +181,14 @@ bool ZstdDecompressStream::Begin(const ZstdDecompressionDict& ddict)
 
 bool ZstdDecompressStream::Transform(const Vec<u8>& chunk, StreamCallback callback)
 {
+    // EM_ASM({
+    //     console.log("here, transform"); 
+    //     console.log($0);
+    // }, pos);
+    EM_ASM(
+        console.log("here, transform"); 
+    );
+
     if (!HasStream()) return false;
 
     auto chunk_offset = 0u;
@@ -233,7 +243,11 @@ bool ZstdDecompressStream::HasStream() const
 
 
 bool ZstdDecompressStream::Begin(DStreamInitializer initializer)
-{
+{   
+    EM_ASM(
+    console.log("here, begin");
+  );
+
     if (HasStream()) return true;
 
     DStreamPtr stream(ZSTD_createDStream(), ZSTD_freeDStream);
@@ -252,7 +266,15 @@ bool ZstdDecompressStream::Begin(DStreamInitializer initializer)
 
 
 bool ZstdDecompressStream::Decompress(const StreamCallback& callback)
-{
+{   
+    EM_ASM(
+        console.log("here, decompress");
+    );
+
+    EM_ASM({
+        console.log("src_bytes_ size", $0);
+    }, src_bytes_.size());
+
     if (src_bytes_.empty()) return true;
 
     ZSTD_inBuffer input { &src_bytes_[0], src_bytes_.size(), 0 };
@@ -262,6 +284,10 @@ bool ZstdDecompressStream::Decompress(const StreamCallback& callback)
         next_read_size_ = ZSTD_decompressStream(stream_.get(), &output, &input);
         if (ZSTD_isError(next_read_size_)) return false;
 
+        EM_ASM({
+            console.log("input.pos", $0);
+        }, input.pos);
+        
         dest_bytes_.resize(output.pos);
         callback(dest_bytes_);
     }
