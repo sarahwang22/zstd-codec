@@ -179,12 +179,12 @@ bool ZstdDecompressStream::Begin(const ZstdDecompressionDict& ddict)
 }
 
 
-bool ZstdDecompressStream::Transform(const Vec<u8>& chunk, StreamCallback callback)
+bool ZstdDecompressStream::Transform(const Vec<u8>& chunk, int pos, StreamCallback callback)
 {
-    // EM_ASM({
-    //     console.log("here, transform"); 
-    //     console.log($0);
-    // }, pos);
+    EM_ASM({
+        console.log($0);
+    }, pos);
+
     EM_ASM(
         console.log("here, transform"); 
     );

@@ -125,7 +125,7 @@ TEST_CASE("Stream using dictionary", "[zstd][compress][decompress][dictionary][s
 
     ZstdDecompressStream dstream;
     REQUIRE(dstream.Begin(ddict));
-    REQUIRE(dstream.Transform(compressed_bytes, dstream_callback));
+    REQUIRE(dstream.Transform(compressed_bytes, 0, dstream_callback));
     REQUIRE(dstream.End(dstream_callback));
     REQUIRE(compressed_bytes.size() < content_bytes.size());
     REQUIRE(content_bytes == sample_books);
@@ -202,7 +202,7 @@ TEST_CASE("ZstdDecompressStream", "[zstd][decompress][stream]")
     FileResource zst_file(fixturePath("dance_yorokobi_mai_woman.bmp.zst"), "rb");
     while ((read_size = fread(&read_buff[0], 1, read_buff.size(), zst_file.get()))) {
         read_buff.resize(read_size);
-        REQUIRE(stream.Transform(read_buff, callback));
+        REQUIRE(stream.Transform(read_buff, 0, callback));
 
         std::copy(std::begin(read_buff),
                   std::end(read_buff), std::back_inserter(compressed_bytes));

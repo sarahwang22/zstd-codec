@@ -48,7 +48,7 @@ public:
 
     bool Begin();
     bool Begin(const ZstdDecompressionDict& ddict);
-    bool Transform(const Vec<u8>& chunk, StreamCallback callback);
+    bool Transform(const Vec<u8>& chunk, int pos, StreamCallback callback);
     bool Flush(StreamCallback callback);
     bool End(StreamCallback callback);
 

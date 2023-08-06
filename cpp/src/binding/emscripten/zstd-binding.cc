@@ -35,7 +35,7 @@ public:
 
     bool Begin();
     bool BeginUsingDict(const ZstdDecompressionDict& ddict);
-    bool Transform(val chunk, val callback);
+    bool Transform(val chunk, int pos, val callback);
     bool Flush(val callback);
     bool End(val callback);
 
@@ -255,13 +255,13 @@ bool ZstdDecompressStreamBinding::BeginUsingDict(const ZstdDecompressionDict& dd
 }
 
 
-bool ZstdDecompressStreamBinding::Transform(val chunk, val callback)
+bool ZstdDecompressStreamBinding::Transform(val chunk, int pos, val callback)
 {
     // use local vector to ensure thread-safety
     Vec<u8> chunk_vec;
     CloneToVector(chunk_vec, chunk);
 
-    return stream_.Transform(chunk_vec, [&callback](const Vec<u8>& decompressed_vec) {
+    return stream_.Transform(chunk_vec, pos, [&callback](const Vec<u8>& decompressed_vec) {
         val decompressed = CloneAsTypedArray(decompressed_vec);
         callback(decompressed);
     });
