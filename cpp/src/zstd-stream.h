@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <array>
 
 #include "common-types.h"
 #include "zstd.h"
@@ -48,9 +49,12 @@ public:
 
     bool Begin();
     bool Begin(const ZstdDecompressionDict& ddict);
-    bool Transform(const Vec<u8>& chunk, int pos, StreamCallback callback);
+    int Transform(const Vec<u8>& chunk, int chunk_offset, int pos, StreamCallback callback);
     bool Flush(StreamCallback callback);
-    bool End(StreamCallback callback);
+    bool End(int pos, StreamCallback callback);
+    int OldTransform(int pos);
+
+    
 
 private:
     using DStreamPtr = std::unique_ptr<ZSTD_DStream, decltype(&ZSTD_freeDStream)>;
@@ -58,10 +62,11 @@ private:
 
     bool HasStream() const;
     bool Begin(DStreamInitializer initializer);
-    bool Decompress(const StreamCallback& callback);
+    int Decompress(int pos, const StreamCallback& callback);
 
     DStreamPtr  stream_;
     size_t      next_read_size_;
+    size_t      src_offset_;
     Vec<u8>     src_bytes_;
     Vec<u8>     dest_bytes_;
 };
