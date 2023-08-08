@@ -182,6 +182,9 @@ bool ZstdDecompressStream::Begin(const ZstdDecompressionDict& ddict)
 
 int ZstdDecompressStream::Transform(const Vec<u8>& chunk, int chunk_offset, int pos, StreamCallback callback)
 {
+    // returns the position (in the current src_bytes) that we had last finished decompressing from
+    // in other words, just for Decompress function to start reading from
+
     EM_ASM({
         console.log($0);
     }, chunk_offset);
@@ -217,6 +220,7 @@ int ZstdDecompressStream::Transform(const Vec<u8>& chunk, int chunk_offset, int 
             // chunk_offset += copy_size;
 
             // if chunk is processed, but not enough for a src_bytes!!!
+            // returning 0
             return 0;
         }
 
@@ -324,9 +328,4 @@ int ZstdDecompressStream::Decompress(int pos, const StreamCallback& callback)
     // if finished, 
 
     return input.pos;
-}
-
-
-int ZstdDecompressStream::OldTransform(int pos){
-    return 3;
 }

@@ -4,6 +4,8 @@
 #include "../../zstd-codec.h"
 #include "../../zstd-dict.h"
 #include "../../zstd-stream.h"
+#include "../../zstd-read.h"
+// todo: add zstd-read.h
 
 
 using namespace emscripten;
@@ -39,10 +41,28 @@ public:
     int Transform(val chunk, int chunk_offset, int pos, val callback);
     bool Flush(val callback);
     bool End(int pos, val callback);
-    int OldTransform(int pos);
 
 private:
     ZstdDecompressStream    stream_;
+};
+
+class ZstdDecompressReadBinding
+{
+public:
+    ZstdDecompressReadBinding();
+    ~ZstdDecompressReadBinding();
+
+    bool Begin();
+    bool BeginUsingDict(const ZstdDecompressionDict& ddict);
+
+    bool Load(val chunk);
+    bool Read(val callback);
+
+    bool Flush(val callback);
+    bool End(int pos, val callback);
+
+private:
+    ZstdDecompressRead    stream_;
 };
 
 
@@ -287,22 +307,67 @@ bool ZstdDecompressStreamBinding::End(int pos, val callback)
     });
 }
 
-int ZstdDecompressStreamBinding::OldTransform(int pos)
+//
+// ZstdDecompressReadBinding
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ZstdDecompressReadBinding::ZstdDecompressReadBinding()
+    : stream_()
 {
-    // use local vector to ensure thread-safety
-    
-    return stream_.OldTransform(pos);
 }
 
 
-// int ZstdDecompressStreamBinding::Decompress(int pos, val callback)
-// {
-//     return stream_.Decompress(pos, [&callback](const Vec<u8>& decompressed_vec) {
-//         val decompressed = CloneAsTypedArray(decompressed_vec);
-//         callback(decompressed);
-//     });
-// }
+ZstdDecompressReadBinding::~ZstdDecompressReadBinding()
+{
+}
 
+
+bool ZstdDecompressReadBinding::Begin()
+{
+    return stream_.Begin();
+}
+
+
+bool ZstdDecompressReadBinding::BeginUsingDict(const ZstdDecompressionDict& ddict)
+{
+    return stream_.Begin(ddict);
+}
+
+
+bool ZstdDecompressReadBinding::Load(val chunk)
+{
+    Vec<u8> chunk_vec;
+    CloneToVector(chunk_vec, chunk);
+
+    return stream_.Load(chunk_vec);
+}
+
+bool ZstdDecompressReadBinding::Read(val callback)
+{
+
+    return stream_.Read([&callback](const Vec<u8>& decompressed_vec) {
+        val decompressed = CloneAsTypedArray(decompressed_vec);
+        callback(decompressed);
+    });
+}
+
+bool ZstdDecompressReadBinding::Flush(val callback)
+{
+    return stream_.Flush([&callback](const Vec<u8>& decompressed_vec) {
+        val decompressed = CloneAsTypedArray(decompressed_vec);
+        callback(decompressed);
+    });
+}
+
+
+bool ZstdDecompressReadBinding::End(int pos, val callback)
+{
+    return stream_.End([&callback](const Vec<u8>& decompressed_vec) {
+        val decompressed = CloneAsTypedArray(decompressed_vec);
+        callback(decompressed);
+    });
+}
 
 // ---- bindings --------------------------------------------------------------
 
@@ -339,14 +404,14 @@ EMSCRIPTEN_BINDINGS(zstd) {
         .function("end", &ZstdCompressStreamBinding::End)
         ;
 
-    class_<ZstdDecompressStreamBinding>("ZstdDecompressStreamBinding")
+    class_<ZstdDecompressReadBinding>("ZstdDecompressReadBinding")
         .constructor<>()
-        .function("begin", &ZstdDecompressStreamBinding::Begin)
-        .function("beginUsingDict", &ZstdDecompressStreamBinding::BeginUsingDict)
-        .function("transform", &ZstdDecompressStreamBinding::Transform)
-        .function("flush", &ZstdDecompressStreamBinding::Flush)
-        .function("end", &ZstdDecompressStreamBinding::End)
-        .function("oldtransform", &ZstdDecompressStreamBinding::OldTransform)
+        .function("begin", &ZstdDecompressReadBinding::Begin)
+        .function("beginUsingDict", &ZstdDecompressReadBinding::BeginUsingDict)
+        .function("load", &ZstdDecompressReadBinding::Load)
+        .function("read", &ZstdDecompressReadBinding::Read)
+        .function("flush", &ZstdDecompressReadBinding::Flush)
+        .function("end", &ZstdDecompressReadBinding::End)
         ;
 }
 

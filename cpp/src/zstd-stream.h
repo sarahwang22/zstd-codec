@@ -52,7 +52,6 @@ public:
     int Transform(const Vec<u8>& chunk, int chunk_offset, int pos, StreamCallback callback);
     bool Flush(StreamCallback callback);
     bool End(int pos, StreamCallback callback);
-    int OldTransform(int pos);
 
     
 
