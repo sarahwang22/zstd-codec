@@ -106,39 +106,6 @@ bool ZstdDecompressRead::Read(StreamCallback callback) {
     return true;
 }
 
-bool ZstdDecompressRead::Decompress(const StreamCallback& callback)
-{
-    if (src_bytes_.empty()) return true;
-
-    ZSTD_inBuffer input { &src_bytes_[0], src_bytes_.size(), src_offset_};
-    int prev_src_offset = src_offset_;
-    if (input.pos < input.size) {
-        dest_bytes_.resize(dest_bytes_.capacity());
-        ZSTD_outBuffer output { &dest_bytes_[0], dest_bytes_.size(), 0};
-        next_read_size_ = ZSTD_decompressStream(stream_.get(), &output, &input);
-        if (ZSTD_isError(next_read_size_)) return false;
-
-        dest_bytes_.resize(output.pos);
-        callback(dest_bytes_);
-    }
-
-    src_offset_ = input.pos;
-    chunk_offset_ += src_offset_ - prev_src_offset;
-
-    EM_ASM({
-        console.log("src_offset_", $0);
-        console.log("out of src_bytes_.size()", $1);
-    }, src_offset_, src_bytes_.size());
-
-    if (src_offset_ == src_bytes_.size()) {
-        src_offset_ = 0; //maybe don't need
-        src_bytes_.clear();
-    }
-
-    return true;
-}
-
-
 bool ZstdDecompressRead::Flush(StreamCallback callback)
 {
     return Decompress(callback);
@@ -147,6 +114,10 @@ bool ZstdDecompressRead::Flush(StreamCallback callback)
 
 bool ZstdDecompressRead::End(StreamCallback callback)
 {
+    EM_ASM({
+        console.log("read in zstd-read.cc");
+    });
+
     if (!HasStream()) return true;
 
     auto success = true;
@@ -183,4 +154,40 @@ bool ZstdDecompressRead::Begin(DStreamInitializer initializer)
     return true;
 }
 
+bool ZstdDecompressRead::Decompress(const StreamCallback& callback)
+{
+    if (src_bytes_.empty()) return true;
 
+    // decompresses src_bytes until reach limit for dest_bytes_ size
+    ZSTD_inBuffer input { &src_bytes_[0], src_bytes_.size(), src_offset_};
+    int prev_src_offset = src_offset_;
+    if (input.pos < input.size) {
+        dest_bytes_.resize(dest_bytes_.capacity());
+        ZSTD_outBuffer output { &dest_bytes_[0], dest_bytes_.size(), 0};
+        next_read_size_ = ZSTD_decompressStream(stream_.get(), &output, &input);
+        if (ZSTD_isError(next_read_size_)) return false;
+
+        dest_bytes_.resize(output.pos);
+        callback(dest_bytes_);
+    }
+
+    src_offset_ = input.pos;
+    chunk_offset_ += src_offset_ - prev_src_offset;
+
+    EM_ASM({
+        console.log("src_offset_", $0);
+        console.log("out of src_bytes_.size()", $1);
+    }, src_offset_, src_bytes_.size());
+
+    if (src_offset_ == src_bytes_.size()) {
+        src_offset_ = 0; //maybe don't need
+        src_bytes_.clear();
+    }
+
+    return true;
+}
+
+bool ZstdDecompressRead::Print() {
+    EM_ASM(console.log("just print please"););
+    return true;
+}

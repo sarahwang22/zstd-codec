@@ -26,7 +26,7 @@ public:
     bool Flush(StreamCallback callback);
     bool End(StreamCallback callback);
 
-    
+    bool Print();
 
 private:
     using DStreamPtr = std::unique_ptr<ZSTD_DStream, decltype(&ZSTD_freeDStream)>;

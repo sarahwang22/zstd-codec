@@ -240,6 +240,10 @@ int ZstdDecompressStream::Transform(const Vec<u8>& chunk, int chunk_offset, int 
 
 bool ZstdDecompressStream::Flush(StreamCallback callback)
 {
+    EM_ASM({
+        console.log("stream flush?");
+    });
+    
     return Decompress(0, callback);
 }
 

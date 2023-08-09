@@ -1,5 +1,6 @@
 #include <emscripten/bind.h>
 #include <array>
+#include <emscripten.h> // try deleting this
 
 #include "../../zstd-codec.h"
 #include "../../zstd-dict.h"
@@ -59,7 +60,9 @@ public:
     bool Read(val callback);
 
     bool Flush(val callback);
-    bool End(int pos, val callback);
+    bool End(val callback);
+
+    bool Print();
 
 private:
     ZstdDecompressRead    stream_;
@@ -361,12 +364,17 @@ bool ZstdDecompressReadBinding::Flush(val callback)
 }
 
 
-bool ZstdDecompressReadBinding::End(int pos, val callback)
+bool ZstdDecompressReadBinding::End(val callback) //FIX THIS
 {
     return stream_.End([&callback](const Vec<u8>& decompressed_vec) {
         val decompressed = CloneAsTypedArray(decompressed_vec);
         callback(decompressed);
     });
+}
+
+bool ZstdDecompressReadBinding::Print() //FIX THIS
+{
+    return stream_.Print();
 }
 
 // ---- bindings --------------------------------------------------------------
@@ -412,6 +420,7 @@ EMSCRIPTEN_BINDINGS(zstd) {
         .function("read", &ZstdDecompressReadBinding::Read)
         .function("flush", &ZstdDecompressReadBinding::Flush)
         .function("end", &ZstdDecompressReadBinding::End)
+        .function("print", &ZstdDecompressReadBinding::Print)
         ;
 }
 
