@@ -41,12 +41,14 @@ bool ZstdDecompressRead::Begin(const ZstdDecompressionDict& ddict)
     });
 }
 
+/*
+return: 
+false, if you try to load another chunk while chunk_bytes_
+has not been completely read
+
+true, if you successully copy chunk to chunk_bytes_
+*/
 bool ZstdDecompressRead::Load(const Vec<u8>& chunk) {
-    
-    EM_ASM({
-        console.log("Loading chunks");
-        console.log("checking chunk_bytes_ size... : ", $0);
-    }, chunk_bytes_.size());
 
     // cannot load chunk while there is still one
     if (chunk_bytes_.size()) return false;
@@ -57,28 +59,24 @@ bool ZstdDecompressRead::Load(const Vec<u8>& chunk) {
 
     std::copy(copy_begin, copy_end, std::back_inserter(chunk_bytes_));
 
-    //checking the contents of loaded chunk_bytes_
-    EM_ASM({
-        console.log("loaded chunk_bytes_ size: ", $0);
-    }, chunk_bytes_.size());
-
     return true;
 }
 
+/*
+returns:
+false, if all of chunk_bytes_ has been decompressed
+*/
 bool ZstdDecompressRead::Read(StreamCallback callback) {
-    EM_ASM(console.log("Read"));
 
-    // returns false if there is nothing left to read
+    // returns false and clears chunk if there is nothing left to read
     if (chunk_offset_ == chunk_bytes_.size()) {
         chunk_bytes_.clear();
         chunk_offset_ = 0;
         return false;
     }
 
-    EM_ASM({
-        console.log("checking src_bytes_ size... : ", $0);
-    }, src_bytes_.size());
-
+    // src_bytes_ is a section of chunk that is being decompressed
+    // if it is empty, read the next section of chunk and put that in src_bytes
     if (src_bytes_.size() == 0) {
         const auto src_available = src_bytes_.capacity() - src_bytes_.size();
         const auto chunk_remains = chunk_bytes_.size() - chunk_offset_;
@@ -86,8 +84,6 @@ bool ZstdDecompressRead::Read(StreamCallback callback) {
 
         const auto copy_begin = std::begin(chunk_bytes_) + chunk_offset_;
         const auto copy_end = copy_begin + copy_size;
-
-        // chunk_offset += copy_size;
 
         // append src bytes
         std::copy(copy_begin, copy_end, std::back_inserter(src_bytes_));
@@ -114,9 +110,6 @@ bool ZstdDecompressRead::Flush(StreamCallback callback)
 
 bool ZstdDecompressRead::End(StreamCallback callback)
 {
-    EM_ASM({
-        console.log("read in zstd-read.cc");
-    });
 
     if (!HasStream()) return true;
 
@@ -174,20 +167,12 @@ bool ZstdDecompressRead::Decompress(const StreamCallback& callback)
     src_offset_ = input.pos;
     chunk_offset_ += src_offset_ - prev_src_offset;
 
-    EM_ASM({
-        console.log("src_offset_", $0);
-        console.log("out of src_bytes_.size()", $1);
-    }, src_offset_, src_bytes_.size());
-
+    // if we have finished decompressing src_bytes_
+    // clear src_bytes_
     if (src_offset_ == src_bytes_.size()) {
-        src_offset_ = 0; //maybe don't need
+        src_offset_ = 0;
         src_bytes_.clear();
     }
 
-    return true;
-}
-
-bool ZstdDecompressRead::Print() {
-    EM_ASM(console.log("just print please"););
     return true;
 }

@@ -1,12 +1,10 @@
 #include <emscripten/bind.h>
 #include <array>
-#include <emscripten.h> // try deleting this
 
 #include "../../zstd-codec.h"
 #include "../../zstd-dict.h"
 #include "../../zstd-stream.h"
 #include "../../zstd-read.h"
-// todo: add zstd-read.h
 
 
 using namespace emscripten;
@@ -61,8 +59,6 @@ public:
 
     bool Flush(val callback);
     bool End(val callback);
-
-    bool Print();
 
 private:
     ZstdDecompressRead    stream_;
@@ -372,11 +368,6 @@ bool ZstdDecompressReadBinding::End(val callback) //FIX THIS
     });
 }
 
-bool ZstdDecompressReadBinding::Print() //FIX THIS
-{
-    return stream_.Print();
-}
-
 // ---- bindings --------------------------------------------------------------
 
 EMSCRIPTEN_BINDINGS(zstd) {
@@ -420,7 +411,6 @@ EMSCRIPTEN_BINDINGS(zstd) {
         .function("read", &ZstdDecompressReadBinding::Read)
         .function("flush", &ZstdDecompressReadBinding::Flush)
         .function("end", &ZstdDecompressReadBinding::End)
-        .function("print", &ZstdDecompressReadBinding::Print)
         ;
 }
 
